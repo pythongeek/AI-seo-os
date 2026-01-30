@@ -113,7 +113,7 @@ export const analystAgent = {
    */
   classifyAnalysisType(query: string): string {
     const lower = query.toLowerCase();
-    
+
     if (lower.includes('traffic drop') || lower.includes('traffic decline')) {
       return 'TRAFFIC_DECLINE';
     }
@@ -129,7 +129,7 @@ export const analystAgent = {
     if (lower.includes('crawl') && (lower.includes('waste') || lower.includes('budget'))) {
       return 'CRAWL_WASTE';
     }
-    
+
     return 'GENERAL';
   },
 
@@ -178,9 +178,9 @@ export const analystAgent = {
     `);
 
     return {
-      analytics: analytics.rows,
-      urlMetrics: urlMetrics.rows,
-      crawlStats: crawlStats.rows,
+      analytics: analytics as any[],
+      urlMetrics: urlMetrics as any[],
+      crawlStats: crawlStats as any[],
       dateRange: { start: startDate, end: endDate }
     };
   },
@@ -197,7 +197,7 @@ export const analystAgent = {
 
     // Compare current period vs previous period
     const currentPeriod = data.analytics;
-    
+
     const prompt = `You are the ANALYST agent analyzing a traffic decline.
 
 Current Period Data (Last 30 days):
@@ -262,14 +262,14 @@ Output format:
       // Calculate expected CTR based on position
       const expectedCTR = this.getExpectedCTR(row.position);
       const currentCTR = row.ctr;
-      
+
       // Calculate deviation
       const deviation = (currentCTR - expectedCTR) / expectedCTR;
 
       // Check if significant anomaly
       if (Math.abs(deviation) > deviationThreshold) {
         const classification = this.classifyCTRAnomaly(deviation, row.position, currentCTR);
-        
+
         anomalies.push({
           query: row.query,
           page: row.page,
@@ -355,7 +355,7 @@ Output format:
       if (rows.length < 8) continue; // Need enough data
 
       const [query, page] = key.split('|');
-      const sorted = rows.sort((a: any, b: any) => 
+      const sorted = rows.sort((a: any, b: any) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
@@ -397,13 +397,13 @@ Output format:
    */
   groupByQueryPage(rows: any[]): Record<string, any[]> {
     const grouped: Record<string, any[]> = {};
-    
+
     for (const row of rows) {
       const key = `${row.query}|${row.page}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(row);
     }
-    
+
     return grouped;
   },
 
@@ -413,11 +413,11 @@ Output format:
   getPositionAt(sortedRows: any[], daysAgo: number): number | null {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() - daysAgo);
-    
-    const row = sortedRows.find((r: any) => 
+
+    const row = sortedRows.find((r: any) =>
       new Date(r.date).getTime() <= targetDate.getTime()
     );
-    
+
     return row?.position || null;
   },
 
@@ -433,13 +433,13 @@ Output format:
     for (const row of data.analytics) {
       // Filter by position range (7-20)
       if (row.position < 7 || row.position > 20) continue;
-      
+
       // Filter by impression volume
       if (row.impressions < 100) continue;
 
       const currentCTR = row.ctr;
       const expectedCTRPos5 = this.getExpectedCTR(5);
-      
+
       // Calculate traffic potential
       const trafficPotential = Math.round(
         row.impressions * (expectedCTRPos5 - currentCTR)
@@ -480,11 +480,11 @@ Output format:
     // Position-based difficulty
     if (position <= 10) return 'LOW';
     if (position <= 15) return 'MEDIUM';
-    
+
     // Query complexity
     const words = query.split(' ').length;
     if (words > 6) return 'HIGH';
-    
+
     return 'MEDIUM';
   },
 
@@ -497,7 +497,7 @@ Output format:
       MEDIUM: 'Improve content depth and add internal links',
       HIGH: 'Comprehensive content overhaul + backlink acquisition'
     };
-    
+
     return recommendations[difficulty];
   },
 
@@ -515,11 +515,11 @@ Output format:
     for (const url of data.urlMetrics) {
       // High crawl frequency but no traffic
       if (url.crawl_frequency > minCrawlFrequency &&
-          url.clicks_90d === 0 &&
-          url.seo_priority_score < 0.3) {
-        
+        url.clicks_90d === 0 &&
+        url.seo_priority_score < 0.3) {
+
         const classification = this.classifyWasteURL(url.url);
-        
+
         issues.push({
           url: url.url,
           crawlFrequency: url.crawl_frequency,
@@ -566,10 +566,10 @@ Output format:
   isOldDate(url: string): boolean {
     const match = url.match(/\/(\d{4})\/(\d{2})/);
     if (!match) return false;
-    
+
     const year = parseInt(match[1]);
     const currentYear = new Date().getFullYear();
-    
+
     return currentYear - year > 2;
   },
 
@@ -585,7 +585,7 @@ Output format:
       AUTHOR_PAGE: 'Consider noindex for low-value author pages',
       OTHER_LOW_VALUE: 'Review and potentially noindex or block'
     };
-    
+
     return recommendations[classification];
   },
 
