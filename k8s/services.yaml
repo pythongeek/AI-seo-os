@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-seo-os-web
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-web
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: ai-seo-os-web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ai-seo-os
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-db
+  namespace: ai-seo-os
+  labels:
+    app: supabase-db
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: supabase-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n
+  namespace: ai-seo-os
+  labels:
+    app: n8n
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5678
+    targetPort: 5678
+    protocol: TCP
+    name: http
+  selector:
+    app: n8n
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-seo-os-ingress
+  namespace: ai-seo-os
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  tls:
+  - hosts:
+    - ai-seo-os.yourdomain.com
+    secretName: ai-seo-os-tls
+  rules:
+  - host: ai-seo-os.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-seo-os-web
+            port:
+              number: 3000
+---
+# Horizontal Pod Autoscaler for web tier
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-seo-os-web-hpa
+  namespace: ai-seo-os
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-seo-os-web
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+---
+# Pod Disruption Budget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-seo-os-web-pdb
+  namespace: ai-seo-os
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-seo-os-web

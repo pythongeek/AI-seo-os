@@ -1,0 +1,164 @@
+# CronJobs for scheduled tasks
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-gsc-sync
+  namespace: ai-seo-os
+spec:
+  schedule: "0 2 * * *"  # 2 AM UTC daily
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sync
+            image: ai-seo-os/worker-gsc:latest
+            command:
+            - node
+            - scripts/daily-sync.js
+            envFrom:
+            - configMapRef:
+                name: ai-seo-os-config
+            - secretRef:
+                name: ai-seo-os-secrets
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: impact-measurement
+  namespace: ai-seo-os
+spec:
+  schedule: "0 3 * * *"  # 3 AM UTC daily
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: measure
+            image: ai-seo-os/worker-main:latest
+            command:
+            - node
+            - scripts/measure-impact.js
+            envFrom:
+            - configMapRef:
+                name: ai-seo-os-config
+            - secretRef:
+                name: ai-seo-os-secrets
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sleep-cycle
+  namespace: ai-seo-os
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: consolidate
+            image: ai-seo-os/worker-memory:latest
+            command:
+            - node
+            - scripts/sleep-cycle.js
+            envFrom:
+            - configMapRef:
+                name: ai-seo-os-config
+            - configMapRef:
+                name: ai-seo-os-workers-config
+            - secretRef:
+                name: ai-seo-os-secrets
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "250m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-report
+  namespace: ai-seo-os
+spec:
+  schedule: "0 9 * * 1"  # Monday 9 AM UTC
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: report
+            image: ai-seo-os/worker-main:latest
+            command:
+            - node
+            - scripts/weekly-report.js
+            envFrom:
+            - configMapRef:
+                name: ai-seo-os-config
+            - secretRef:
+                name: ai-seo-os-secrets
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: refresh-materialized-views
+  namespace: ai-seo-os
+spec:
+  schedule: "0 4 * * *"  # 4 AM UTC daily
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: refresh
+            image: ai-seo-os/worker-main:latest
+            command:
+            - node
+            - scripts/refresh-views.js
+            envFrom:
+            - configMapRef:
+                name: ai-seo-os-config
+            - secretRef:
+                name: ai-seo-os-secrets
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "250m"
+          restartPolicy: OnFailure

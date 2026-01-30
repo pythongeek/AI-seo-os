@@ -1,0 +1,288 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-seo-os-web
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-seo-os-web
+  template:
+    metadata:
+      labels:
+        app: ai-seo-os-web
+    spec:
+      containers:
+      - name: web
+        image: ai-seo-os/web:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: ai-seo-os-config
+        - secretRef:
+            name: ai-seo-os-secrets
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health/ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-seo-os-worker-main
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-worker-main
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-seo-os-worker-main
+  template:
+    metadata:
+      labels:
+        app: ai-seo-os-worker-main
+    spec:
+      containers:
+      - name: worker
+        image: ai-seo-os/worker-main:latest
+        envFrom:
+        - configMapRef:
+            name: ai-seo-os-config
+        - configMapRef:
+            name: ai-seo-os-workers-config
+        - secretRef:
+            name: ai-seo-os-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - healthcheck.js
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-seo-os-worker-ai
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-worker-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-seo-os-worker-ai
+  template:
+    metadata:
+      labels:
+        app: ai-seo-os-worker-ai
+    spec:
+      containers:
+      - name: worker
+        image: ai-seo-os/worker-ai:latest
+        envFrom:
+        - configMapRef:
+            name: ai-seo-os-config
+        - configMapRef:
+            name: ai-seo-os-workers-config
+        - secretRef:
+            name: ai-seo-os-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - healthcheck.js
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-seo-os-worker-gsc
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-worker-gsc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-seo-os-worker-gsc
+  template:
+    metadata:
+      labels:
+        app: ai-seo-os-worker-gsc
+    spec:
+      containers:
+      - name: worker
+        image: ai-seo-os/worker-gsc:latest
+        envFrom:
+        - configMapRef:
+            name: ai-seo-os-config
+        - configMapRef:
+            name: ai-seo-os-workers-config
+        - secretRef:
+            name: ai-seo-os-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - healthcheck.js
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-seo-os-worker-memory
+  namespace: ai-seo-os
+  labels:
+    app: ai-seo-os-worker-memory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-seo-os-worker-memory
+  template:
+    metadata:
+      labels:
+        app: ai-seo-os-worker-memory
+    spec:
+      containers:
+      - name: worker
+        image: ai-seo-os/worker-memory:latest
+        envFrom:
+        - configMapRef:
+            name: ai-seo-os-config
+        - configMapRef:
+            name: ai-seo-os-workers-config
+        - secretRef:
+            name: ai-seo-os-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - healthcheck.js
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ai-seo-os
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "256mb"
+        - --maxmemory-policy
+        - allkeys-lru
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: ai-seo-os
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

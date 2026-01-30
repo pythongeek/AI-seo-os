@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-seo-os
+  labels:
+    name: ai-seo-os
+    app.kubernetes.io/name: ai-seo-os
+    app.kubernetes.io/version: "1.0.0"

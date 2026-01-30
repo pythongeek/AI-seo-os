@@ -1,0 +1,151 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "name": "ai-seo-os",
+  "regions": ["iad1"],
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/health",
+      "dest": "/api/health"
+    },
+    {
+      "src": "/api/agent/chat",
+      "dest": "/api/agent/chat",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "src": "/api/gsc/(.*)",
+      "dest": "/api/gsc/$1",
+      "headers": {
+        "Cache-Control": "private, max-age=60"
+      }
+    },
+    {
+      "src": "/api/dashboard/(.*)",
+      "dest": "/api/dashboard/$1",
+      "headers": {
+        "Cache-Control": "private, max-age=300"
+      }
+    },
+    {
+      "src": "/api/jobs/(.*)",
+      "dest": "/api/jobs/$1",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    }
+  ],
+  "functions": {
+    "app/api/agent/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/api/gsc/**/*.ts": {
+      "maxDuration": 10
+    },
+    "app/api/dashboard/**/*.ts": {
+      "maxDuration": 5
+    },
+    "app/api/jobs/**/*.ts": {
+      "maxDuration": 10
+    },
+    "app/api/cron/**/*.ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/daily-sync",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/impact-measurement",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/anomaly-detection",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 9 * * 1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/ingest/:path*",
+      "destination": "https://app.inngest.com/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/old-dashboard",
+      "destination": "/dashboard",
+      "permanent": true
+    }
+  ],
+  "github": {
+    "enabled": true,
+    "silent": true,
+    "autoJobCancelation": true
+  }
+}
