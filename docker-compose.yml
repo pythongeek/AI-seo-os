@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Postgres (Supabase-compatible) with pgvector
+  db:
+    image: supabase/postgres:15.1.0.147
+    container_name: ai_seo_os_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker/supabase/init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and queues
+  redis:
+    image: redis:7-alpine
+    container_name: ai_seo_os_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Inngest Dev Server (Optional but recommended for agentic workflows)
+  inngest:
+    image: inngest/inngest:latest
+    container_name: ai_seo_os_inngest
+    ports:
+      - "8288:8288"
+    environment:
+      - INNGEST_EVENT_KEY=local
+      - INNGEST_SIGNING_KEY=local
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:
