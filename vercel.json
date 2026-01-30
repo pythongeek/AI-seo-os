@@ -1,73 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "name": "ai-seo-os",
-  "regions": ["iad1"],
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_TELEMETRY_DISABLED": "1"
-  },
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/health",
-      "dest": "/api/health"
-    },
-    {
-      "src": "/api/agent/chat",
-      "dest": "/api/agent/chat",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      }
-    },
-    {
-      "src": "/api/gsc/(.*)",
-      "dest": "/api/gsc/$1",
-      "headers": {
-        "Cache-Control": "private, max-age=60"
-      }
-    },
-    {
-      "src": "/api/dashboard/(.*)",
-      "dest": "/api/dashboard/$1",
-      "headers": {
-        "Cache-Control": "private, max-age=300"
-      }
-    },
-    {
-      "src": "/api/jobs/(.*)",
-      "dest": "/api/jobs/$1",
-      "headers": {
-        "Cache-Control": "no-cache"
-      }
-    }
-  ],
-  "functions": {
-    "app/api/agent/**/*.ts": {
-      "maxDuration": 30
-    },
-    "app/api/gsc/**/*.ts": {
-      "maxDuration": 10
-    },
-    "app/api/dashboard/**/*.ts": {
-      "maxDuration": 5
-    },
-    "app/api/jobs/**/*.ts": {
-      "maxDuration": 10
-    },
-    "app/api/cron/**/*.ts": {
-      "maxDuration": 60
-    }
-  },
+  "installCommand": "npm install --legacy-peer-deps",
   "crons": [
     {
       "path": "/api/cron/daily-sync",
@@ -142,10 +75,5 @@
       "destination": "/dashboard",
       "permanent": true
     }
-  ],
-  "github": {
-    "enabled": true,
-    "silent": true,
-    "autoJobCancelation": true
-  }
+  ]
 }
