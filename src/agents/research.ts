@@ -1,3 +1,3 @@
 export const researchAgent = {
-    research: async () => ({ type: 'RESEARCH', findings: [] })
+    research: async (...args: any[]) => ({ type: 'RESEARCH', findings: [] })
 };

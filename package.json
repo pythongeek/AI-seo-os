@@ -24,6 +24,7 @@
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.33.0",
     "framer-motion": "^11.0.0",
+    "googleapis": "^171.0.0",
     "lucide-react": "^0.314.0",
     "next": "^16.1.6",
     "next-auth": "^5.0.0-beta.30",

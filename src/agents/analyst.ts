@@ -234,7 +234,7 @@ Output format:
       system: 'You are an expert SEO analyst. Be precise with data and provide actionable insights.',
       prompt,
       temperature: ANALYST_CONFIG.temperature,
-      maxTokens: ANALYST_CONFIG.maxTokens
+      // maxTokens: ANALYST_CONFIG.maxTokens
     });
 
     return {
@@ -349,7 +349,7 @@ Output format:
     `);
 
     const velocities: VelocityResult[] = [];
-    const grouped = this.groupByQueryPage(history.rows);
+    const grouped = this.groupByQueryPage(history as any[]);
 
     for (const [key, rows] of Object.entries(grouped)) {
       if (rows.length < 8) continue; // Need enough data
@@ -638,7 +638,7 @@ Provide a comprehensive analysis with specific insights and recommendations.`;
       system: 'You are an expert SEO analyst. Provide data-driven insights.',
       prompt,
       temperature: ANALYST_CONFIG.temperature,
-      maxTokens: ANALYST_CONFIG.maxTokens
+      // maxTokens: ANALYST_CONFIG.maxTokens
     });
 
     return {

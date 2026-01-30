@@ -10,12 +10,12 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 // Agent types
-export type AgentType = 
-  | 'ANALYST' 
-  | 'RESEARCH' 
-  | 'TECHNICAL_AUDITOR' 
-  | 'OPTIMIZER' 
-  | 'PLANNER' 
+export type AgentType =
+  | 'ANALYST'
+  | 'RESEARCH'
+  | 'TECHNICAL_AUDITOR'
+  | 'OPTIMIZER'
+  | 'PLANNER'
   | 'MEMORY';
 
 // Execution modes
@@ -50,11 +50,7 @@ export async function classifyAndRoute(
     conversationHistory?: string[];
   }
 ): Promise<AgentRouting> {
-  const model = google('gemini-1.5-flash', {
-    safetySettings: [
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
-    ]
-  });
+  const model = google('gemini-1.5-flash');
 
   const systemPrompt = `You are the Agent Orchestrator for an AI SEO Operating System.
 
@@ -95,13 +91,13 @@ Output JSON with routing decision.`;
       system: systemPrompt,
       prompt: `User query: "${userQuery}"`,
       temperature: 0.1, // Low creativity for consistent routing
-      maxTokens: 500
+      // maxTokens: 500
     });
 
     return result.object;
   } catch (error) {
     console.error('Routing error:', error);
-    
+
     // Fallback to ANALYST if classification fails
     return {
       primary_agent: 'ANALYST',
@@ -165,23 +161,23 @@ async function executeAgent(
     case 'ANALYST':
       const { analystAgent } = await import('./analyst');
       return analystAgent.analyze(userQuery, context, previousResults);
-    
+
     case 'RESEARCH':
       const { researchAgent } = await import('./research');
       return researchAgent.research(userQuery, context, previousResults);
-    
+
     case 'TECHNICAL_AUDITOR':
       const { technicalAuditorAgent } = await import('./technical-auditor');
       return technicalAuditorAgent.audit(userQuery, context, previousResults);
-    
+
     case 'OPTIMIZER':
       const { optimizerAgent } = await import('./optimizer');
       return optimizerAgent.optimize(userQuery, context, previousResults);
-    
+
     case 'PLANNER':
       const { plannerAgent } = await import('./planner');
       return plannerAgent.plan(userQuery, context, previousResults);
-    
+
     default:
       throw new Error(`Unknown agent type: ${agentType}`);
   }

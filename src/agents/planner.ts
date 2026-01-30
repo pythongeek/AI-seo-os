@@ -1,3 +1,3 @@
 export const plannerAgent = {
-    plan: async () => ({ type: 'PLAN', milestones: [] })
+    plan: async (...args: any[]) => ({ type: 'PLAN', milestones: [] })
 };

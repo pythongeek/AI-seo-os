@@ -1,3 +1,3 @@
 export const technicalAuditorAgent = {
-    audit: async () => ({ type: 'AUDIT', findings: [] })
+    audit: async (...args: any[]) => ({ type: 'AUDIT', findings: [] })
 };

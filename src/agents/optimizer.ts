@@ -1,3 +1,3 @@
 export const optimizerAgent = {
-    optimize: async () => ({ type: 'OPTIMIZE', recommendations: [] })
+    optimize: async (...args: any[]) => ({ type: 'OPTIMIZE', recommendations: [] })
 };
