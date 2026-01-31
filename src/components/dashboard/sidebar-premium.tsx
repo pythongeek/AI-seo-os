@@ -13,7 +13,7 @@ import {
     ChevronRight,
     Database
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -26,6 +26,23 @@ const navItems = [
 export function DashboardSidebar({ user }: { user: any }) {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [swarmHealth, setSwarmHealth] = useState<'healthy' | 'unhealthy' | 'loading'>('loading');
+
+    useEffect(() => {
+        const checkHealth = async () => {
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+                setSwarmHealth(data.status === 'ok' ? 'healthy' : 'unhealthy');
+            } catch (error) {
+                setSwarmHealth('unhealthy');
+            }
+        };
+
+        checkHealth();
+        const interval = setInterval(checkHealth, 30000); // Poll every 30s
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <aside
@@ -93,11 +110,16 @@ export function DashboardSidebar({ user }: { user: any }) {
             {!isCollapsed && (
                 <div className="m-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <div className={cn(
+                            "w-2 h-2 rounded-full animate-pulse",
+                            swarmHealth === 'healthy' ? "bg-green-500" :
+                                swarmHealth === 'unhealthy' ? "bg-red-500" : "bg-slate-500"
+                        )} />
                         <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">Swarm Status</span>
                     </div>
                     <p className="text-[10px] text-slate-500 leading-relaxed">
-                        All agents online. <br />
+                        {swarmHealth === 'healthy' ? 'All systems operational.' :
+                            swarmHealth === 'unhealthy' ? 'System disruption detected.' : 'Syncing swarm status...'} <br />
                         Institutional memory synchronized.
                     </p>
                     <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">

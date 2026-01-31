@@ -1,0 +1,60 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  validate:
+    name: Validation (Lint & Type-Check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Lint
+        run: npm run lint
+      
+      - name: Type Check
+        run: npx tsc --noEmit
+
+  migrate:
+    name: Database Migration
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Migrations
+        env:
+          DATABASE_URL: ${{ secrets.POSTGRES_URL }}
+        run: npm run db:migrate
+
+  deploy:
+    name: Vercel Deployment
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./

@@ -84,7 +84,7 @@
 -   [x] Implemented `fetchSearchAnalytics` in `src/lib/gsc/client.ts` with 25k row pagination safety.
 -   [x] Created `analyticsService.bulkUpsertAnalytics` with composite key conflict resolution (`unq_sa_upsert`).
 -   [x] Configured `Inngest` for time-series background jobs (`daily-sync`, `manual-sync`).
-    -   *Logic:* Lag defaults to 3 days. Dimensions: `date`, `query`, `page`, `country`, `device`.
+-   -   *Logic:* Lag defaults to 3 days. Dimensions: `date`, `query`, `page`, `country`, `device`.
 -   [x] Added `DataSyncHistory` Server Component for density feedback on the Dashboard.
 
 ### Technical Decisions
@@ -146,17 +146,25 @@
     -   `High Crawl + 0 Clicks` = Waste.
 -   **Context:** `propertyId` explicitly passed in context object to allow tools to bind correctly.
 
-## Session 3.2: The Analyst Agent Integration
+## Session 5.2: CI/CD Pipeline & Monitoring
 
 ### Status
--   [x] Implemented `analyst-tools.ts` (`get_search_analytics`, `get_ranking_velocity`).
--   [x] Deployed `analystAgent` kernel using Gemini 1.5 Pro and `generateText` with tooling (max 5 steps).
--   [x] Wired Analyst into `agentEngine`.
+- [x] Established GitHub Actions Workflow (`production-deploy.yml`) for linting, type-checking, and auto-migrations.
+- [x] Integrated Sentry for production error tracking and performance monitoring.
+- [x] Implemented `/api/health` for real-time heartbeat of DB and Redis.
+- [x] Developed `logger.ts` with PII/Token redaction logic.
+- [x] Linked Dashboard Sidebar to live health metrics.
 
 ### Technical Decisions
--   **Model:** Gemini 1.5 Pro for massive context analysis (up to 5k rows of analytics if needed).
--   **Anomaly Logic:**
-    -   `CTR Drop + Stable Pos` = Meta Issue.
-    -   `Pos Drop` = Relevance Issue.
-    -   `High Crawl + 0 Clicks` = Waste.
--   **Context:** `propertyId` explicitly passed in context object to allow tools to bind correctly.
+- **CI/CD Atomicity:** Migrations are run *before* Vercel deployment gating. If `drizzle-kit migrate` fails, the build is aborted.
+- **Observability:** Sentry is initialized in `instrumentation.ts` to capture Edge and Node.js runtime errors. 
+- **Redaction:** Log utility uses a recursive "deep-redact" strategy to purge tokens even in nested objects.
+- **Monitoring Thresholds:**
+    - AI Response Latency: >15s (Alert)
+    - Database Connection: >200ms (Warn)
+    - Redis Cache Miss Rate: >40% (Monitor)
+
+### Rollback Procedure
+1. Revert `master` to previous stable commit.
+2. Push to GitHub to trigger CI/CD.
+3. If DB rollback is needed: `npx drizzle-kit drop` (Caution: Manual intervention required for production data safety).
