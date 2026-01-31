@@ -1,239 +1,117 @@
+import { google } from "@ai-sdk/google";
+import { generateObject } from "ai";
+import { z } from "zod";
+
 /**
- * AI SEO Operating System - Agent Orchestrator
- * 
- * Routes user queries to appropriate specialist agents
- * using intent classification and swarm coordination.
+ * Orchestrator Routing Schema
+ * Defines the structured output for the routing decision.
  */
+export const RoutingSchema = z.object({
+  classification: z.enum([
+    "ANALYTICS_QUERY", // "Why did traffic drop?"
+    "TECHNICAL_AUDIT", // "Check for broken links", "Indexing"
+    "CONTENT_RESEARCH", // "What to write", "Algorithm updates"
+    "OPTIMIZATION", // "Fix this", "Generate schema"
+    "PLANNING", // "Create a roadmap", "What should I do next?"
+    "MEMORY_QUERY", // "What have you learned?", "Consolidation status"
+    "GENERAL_CHAT",
+    "COMPLEX_TASK"
+  ]),
+  primaryAgent: z.enum(["ANALYST", "AUDITOR", "RESEARCH", "OPTIMIZER", "PLANNER", "MEMORY", "ASSISTANT"]),
+  secondaryAgents: z.array(z.enum(["ANALYST", "AUDITOR", "RESEARCH", "OPTIMIZER", "PLANNER", "MEMORY"])).optional(),
+  executionMode: z.enum(["SEQUENTIAL", "PARALLEL", "SINGLE"]).default("SINGLE"),
+  reasoning: z.string().describe("Brief explanation of why this routing was chosen"),
+  nextSteps: z.array(z.string()).describe("List of sub-tasks to execute"),
+});
 
-import { google } from '@ai-sdk/google';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+export type RoutingPlan = z.infer<typeof RoutingSchema>;
 
-// Agent types
-export type AgentType =
-  | 'ANALYST'
-  | 'RESEARCH'
-  | 'TECHNICAL_AUDITOR'
-  | 'OPTIMIZER'
-  | 'PLANNER'
-  | 'MEMORY';
-
-// Execution modes
-export type ExecutionMode = 'sequential' | 'parallel';
-
-// Routing result
-export interface AgentRouting {
-  primary_agent: AgentType;
-  secondary_agents: AgentType[];
-  execution_mode: ExecutionMode;
-  reasoning: string;
-  estimated_tokens: number;
-}
-
-// Intent classification schema
-const routingSchema = z.object({
-  primary_agent: z.enum(['ANALYST', 'RESEARCH', 'TECHNICAL_AUDITOR', 'OPTIMIZER', 'PLANNER']),
-  secondary_agents: z.array(z.enum(['ANALYST', 'RESEARCH', 'TECHNICAL_AUDITOR', 'OPTIMIZER', 'PLANNER'])),
-  execution_mode: z.enum(['sequential', 'parallel']),
-  reasoning: z.string(),
-  estimated_tokens: z.number().default(2000)
+// Sequencer Output Schema for Step-by-Step Execution
+export const SequencerSchema = z.object({
+  order: z.array(z.enum(["ANALYST", "AUDITOR", "RESEARCH", "OPTIMIZER", "PLANNER", "MEMORY"])),
+  contextStrategy: z.string().describe("How to pass context between agents (e.g. 'Pass Audit Findings to Optimizer')"),
+  resolutionStrategy: z.string().describe("How to resolve conflicts (e.g. 'Auditor overrides Analyst on technical issues')"),
 });
 
 /**
- * Classify user intent and route to appropriate agents
+ * Orchestrator Agent
+ * Classifies user intent and determines the execution plan.
  */
-export async function classifyAndRoute(
-  userQuery: string,
-  context?: {
-    currentPage?: string;
-    selectedProperty?: string;
-    conversationHistory?: string[];
-  }
-): Promise<AgentRouting> {
-  const model = google('gemini-1.5-flash');
+export const orchestrator = {
+  /**
+   * classifyAndRoute
+   * Analyzes the user message and property context to generate a routing plan.
+   */
+  async classifyAndRoute(
+    userMessage: string,
+    propertyContext?: {
+      url: string;
+      totalClicks: number;
+      decliningPages: number;
+      userId?: string; // Needed for authenticated tools (Auditor)
+    }
+  ): Promise<RoutingPlan> {
+    const contextString = propertyContext
+      ? `Active Property: ${propertyContext.url} | Clicks (30d): ${propertyContext.totalClicks} | Declining Pages: ${propertyContext.decliningPages}`
+      : "No active property selected.";
 
-  const systemPrompt = `You are the Agent Orchestrator for an AI SEO Operating System.
+    const { object } = await generateObject({
+      model: google("gemini-1.5-flash"),
+      schema: RoutingSchema,
+      system: `
+        You are the Orchestrator for the AI SEO OS. Your job is to route user queries to the best specialist agent.
+        
+        Available Agents:
+        - ANALYST: Reads search analytics, traffic trends, and URL performance. Best for "Verify", "Analyze", "Why".
+        - AUDITOR: Checks for technical issues (Indexing, 404s, Robots.txt). Best for "Audit", "Check Indexing", "Fix".
+        - RESEARCH: Uses Google Search to find external data (Algorithm updates, Competitors, Keywords). Best for "Plan", "Suggest", "Find topics".
+        - OPTIMIZER: Generates code fixes (Schema, Metas, Titles) and Internal Links. Best for "Optimize", "Generate", "Fix".
+        - PLANNER: Creates strategic roadmaps and action plans. Best for "Planning", "Roadmap", "What next?".
+        - MEMORY: Reports on "Institutional Knowledge", learned skills, and consolidation status. Best for "What have you learned?", "Show me working strategies".
+        - ASSISTANT: Handles general greetings, help, or unknown queries.
 
-Your task is to analyze user queries and route them to the appropriate specialist agent(s).
+        Context:
+        ${contextString}
 
-Available Agents:
-1. ANALYST - Performance interpretation, anomaly detection, trend analysis
-   Use for: "Why did traffic drop?", "Find ranking changes", "CTR anomalies"
-
-2. RESEARCH - Content gap analysis, keyword clustering, SERP research
-   Use for: "Find keyword gaps", "What content should I create?", "Competitor analysis"
-
-3. TECHNICAL_AUDITOR - Crawl issues, indexing problems, technical diagnostics
-   Use for: "Why isn't this page indexing?", "Fix crawl errors", "robots.txt issues"
-
-4. OPTIMIZER - On-page SEO improvements, title/meta optimization
-   Use for: "Optimize this page", "Improve CTR", "Fix headers"
-
-5. PLANNER - Strategic roadmaps, action plans, milestone creation
-   Use for: "Create SEO roadmap", "What should I do this month?", "6-month plan"
-
-Routing Rules:
-- Traffic/ranking questions → ANALYST
-- Content/opportunity questions → RESEARCH
-- Technical/indexing questions → TECHNICAL_AUDITOR
-- On-page optimization → OPTIMIZER
-- Strategy/planning → PLANNER
-- Complex queries may need multiple agents in sequence
-
-Context: ${context ? JSON.stringify(context) : 'No additional context'}
-
-Output JSON with routing decision.`;
-
-  try {
-    const result = await generateObject({
-      model,
-      schema: routingSchema,
-      system: systemPrompt,
-      prompt: `User query: "${userQuery}"`,
-      temperature: 0.1, // Low creativity for consistent routing
-      // maxTokens: 500
+        Rules:
+        1. **ANALYST**: "Why did traffic drop?", "Analyze this URL performance". Focus on internal data.
+        2. **AUDITOR**: "Why isn't this page indexing?", "Check for 404s", "Technical health". Focus on GSC technicals.
+        3. **RESEARCH**: "Keyword gaps", "Algorithm updates", "Competitor analysis". Focus on external strategy.
+        4. **OPTIMIZER**: "Fix this", "Write meta description", "Generate Schema". Focus on code generation.
+        5. **PLANNER**: "Build a roadmap", "What should I do this week?". Focus on timeline/resources.
+        6. **MEMORY**: "What strategies worked?", "Summarize learnings".
+        7. **Complex**: "Audit this site and give me a fix" -> COMPLEX_TASK + SEQUENTIAL (Auditor -> Optimizer).
+      `,
+      prompt: userMessage,
     });
 
-    return result.object;
-  } catch (error) {
-    console.error('Routing error:', error);
+    return object;
+  },
 
-    // Fallback to ANALYST if classification fails
-    return {
-      primary_agent: 'ANALYST',
-      secondary_agents: [],
-      execution_mode: 'sequential',
-      reasoning: 'Fallback due to classification error',
-      estimated_tokens: 2000
-    };
+  /**
+   * generateSequence
+   * Uses Gemini 1.5 Pro to plan a complex sequential workflow.
+   */
+  async generateSequence(userMessage: string): Promise<z.infer<typeof SequencerSchema>> {
+    const { object } = await generateObject({
+      model: google("gemini-1.5-pro"), // Use Pro for complex planning
+      schema: SequencerSchema,
+      system: `
+        You are the Swarm Commander. Design a sequential execution chain for the user request.
+        
+        AGENTS: ANALYST, AUDITOR, RESEARCH, OPTIMIZER, PLANNER.
+        
+        PATTERNS:
+        - "Audit and Fix": AUDITOR -> OPTIMIZER
+        - "Full Audit": ANALYST -> AUDITOR -> OPTIMIZER -> PLANNER
+        - "Content Plan": RESEARCH -> PLANNER
+        
+        CONFLICT RESOLUTION:
+        - If Analyst says "Traffic Down" but Auditor says "Technical Fine", Trust Auditor on Technical, Analyst on Trends.
+        - If Research says "Gap" but Planner says "No Capacity", Planner Dependencies win.
+      `,
+      prompt: userMessage,
+    });
+    return object;
   }
-}
-
-/**
- * Execute agents in sequence
- */
-export async function executeSequential(
-  routing: AgentRouting,
-  userQuery: string,
-  context: any
-): Promise<any> {
-  const results: any[] = [];
-  const agents = [routing.primary_agent, ...routing.secondary_agents];
-
-  for (const agent of agents) {
-    const result = await executeAgent(agent, userQuery, context, results);
-    results.push({ agent, result });
-  }
-
-  return aggregateResults(results);
-}
-
-/**
- * Execute agents in parallel
- */
-export async function executeParallel(
-  routing: AgentRouting,
-  userQuery: string,
-  context: any
-): Promise<any> {
-  const agents = [routing.primary_agent, ...routing.secondary_agents];
-
-  const results = await Promise.all(
-    agents.map(async (agent) => ({
-      agent,
-      result: await executeAgent(agent, userQuery, context, [])
-    }))
-  );
-
-  return aggregateResults(results);
-}
-
-/**
- * Execute a single agent
- */
-async function executeAgent(
-  agentType: AgentType,
-  userQuery: string,
-  context: any,
-  previousResults: any[]
-): Promise<any> {
-  switch (agentType) {
-    case 'ANALYST':
-      const { analystAgent } = await import('./analyst');
-      return analystAgent.analyze(userQuery, context, previousResults);
-
-    case 'RESEARCH':
-      const { researchAgent } = await import('./research');
-      return researchAgent.research(userQuery, context, previousResults);
-
-    case 'TECHNICAL_AUDITOR':
-      const { technicalAuditorAgent } = await import('./technical-auditor');
-      return technicalAuditorAgent.audit(userQuery, context, previousResults);
-
-    case 'OPTIMIZER':
-      const { optimizerAgent } = await import('./optimizer');
-      return optimizerAgent.optimize(userQuery, context, previousResults);
-
-    case 'PLANNER':
-      const { plannerAgent } = await import('./planner');
-      return plannerAgent.plan(userQuery, context, previousResults);
-
-    default:
-      throw new Error(`Unknown agent type: ${agentType}`);
-  }
-}
-
-/**
- * Aggregate results from multiple agents
- */
-function aggregateResults(results: Array<{ agent: AgentType; result: any }>): any {
-  // Combine insights from all agents
-  const combined = {
-    summary: '',
-    findings: [] as any[],
-    recommendations: [] as any[],
-    nextSteps: [] as any[]
-  };
-
-  for (const { agent, result } of results) {
-    if (result.findings) {
-      combined.findings.push(...result.findings.map((f: any) => ({ ...f, source: agent })));
-    }
-    if (result.recommendations) {
-      combined.recommendations.push(...result.recommendations.map((r: any) => ({ ...r, source: agent })));
-    }
-    if (result.nextSteps) {
-      combined.nextSteps.push(...result.nextSteps.map((s: any) => ({ ...s, source: agent })));
-    }
-  }
-
-  // Generate summary
-  combined.summary = `Analysis complete. Found ${combined.findings.length} issues and ${combined.recommendations.length} recommendations.`;
-
-  return combined;
-}
-
-/**
- * Main orchestration function
- */
-export async function orchestrate(
-  userQuery: string,
-  context?: {
-    currentPage?: string;
-    selectedProperty?: string;
-    conversationHistory?: string[];
-  }
-): Promise<{
-  routing: AgentRouting;
-  results: any;
-}> {
-  // Step 1: Classify and route
-  const routing = await classifyAndRoute(userQuery, context);
-
-  // Step 2: Execute based on mode
-  const results = routing.execution_mode === 'parallel'
-    ? await executeParallel(routing, userQuery, context)
-    : await executeSequential(routing, userQuery, context);
-
-  return { routing, results };
-}
+};

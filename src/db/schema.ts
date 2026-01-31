@@ -45,6 +45,20 @@ export const gscProperties = pgTable('gsc_properties', {
   userIdIdx: index('idx_properties_user').on(t.userId),
 }));
 
+export const sessions = pgTable('session', {
+  sessionToken: text('sessionToken').primaryKey(),
+  userId: uuid('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+});
+
+export const verificationTokens = pgTable('verificationToken', {
+  identifier: text('identifier').notNull(),
+  token: text('token').notNull(),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+}, (vt) => ({
+  compositePk: primaryKey({ columns: [vt.identifier, vt.token] }),
+}));
+
 // ==========================================
 // SEARCH ANALYTICS (Time-Series)
 // ==========================================
@@ -65,6 +79,8 @@ export const searchAnalytics = pgTable('search_analytics', {
 }, (t) => ({
   pk: primaryKey({ columns: [t.id, t.date] }), // Composite PK for partitioning
   propertyDateIdx: index('idx_sa_property_date').on(t.propertyId, t.date),
+  // Constraint for upsert: property_id + date + query + page + device + country = UNIQUE
+  upsertConstraint: unique('unq_sa_upsert').on(t.propertyId, t.date, t.query, t.page, t.device, t.country),
 }));
 
 // ==========================================

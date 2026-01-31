@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { initializeProperty, syncProperties } from '@/app/actions/gsc';
 import { useRouter } from 'next/navigation';
 
@@ -12,33 +12,41 @@ interface Property {
 }
 
 export default function PropertyGrid({ properties }: { properties: Property[] }) {
-    const [isPending, startTransition] = useTransition();
+    const [isPending] = [false];
     const router = useRouter();
 
-    const handleSync = () => {
-        startTransition(async () => {
-            await syncProperties();
-        });
-    };
+    const { mutate: sync, isPending: isSyncing } = useMutation({
+        mutationFn: async () => {
+            const result = await syncProperties();
+            if (!result.success) throw new Error(result.error);
+            return result;
+        },
+        onSuccess: () => {
+            router.refresh();
+        }
+    });
 
-    const handleInitialize = (id: string) => {
-        startTransition(async () => {
-            await initializeProperty(id);
-            // Optionally redirect to dashboard
+    const { mutate: init, isPending: isInitializing } = useMutation({
+        mutationFn: async (id: string) => {
+            const result = await initializeProperty(id);
+            if (!result.success) throw new Error(result.error);
+            return result;
+        },
+        onSuccess: () => {
             router.push('/dashboard');
-        });
-    };
+        }
+    });
 
     return (
         <div className="w-full max-w-5xl">
             <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
                 <h2 className="text-xl font-mono text-zinc-400">AVAILABLE_PROPERTIES</h2>
                 <button
-                    onClick={handleSync}
-                    disabled={isPending}
+                    onClick={() => sync()}
+                    disabled={isSyncing}
                     className="font-mono text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 border border-zinc-600 rounded disabled:opacity-50"
                 >
-                    {isPending ? 'SYNCING...' : 'REFRESH_LIST'}
+                    {isSyncing ? 'SYNCING...' : 'REFRESH_LIST'}
                 </button>
             </div>
 
@@ -69,8 +77,8 @@ export default function PropertyGrid({ properties }: { properties: Property[] })
                                 STAT: {prop.syncStatus?.toUpperCase()}
                             </div>
                             <button
-                                onClick={() => handleInitialize(prop.id)}
-                                disabled={isPending || prop.syncStatus === 'active'}
+                                onClick={() => init(prop.id)}
+                                disabled={isInitializing || prop.syncStatus === 'active'}
                                 className={`
                                     text-xs px-3 py-1.5 border transition-all
                                     ${prop.syncStatus === 'active'

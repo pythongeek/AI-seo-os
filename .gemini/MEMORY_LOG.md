@@ -75,4 +75,88 @@
 -   **Client Library:** Wrapped `googleapis` with a custom `getGSCClient` that decrypts tokens on-the-fly from the DB. Use `oauth2Client.setCredentials({ refresh_token })` to handle auto-refresh.
 -   **Sync Logic:** Implemented in `src/lib/gsc/sync.ts` to be shared between API Route (Background) and Server Action (Interactive). Uses `ON CONFLICT (user_id, property_url) DO UPDATE` to keep permission levels fresh.
 -   **Permission Mapping:** defaulted missing permission levels to `siteRestrictedUser` to be safe.
--   **UI Architecture:** Hydration mismatch avoidance: `page.tsx` (Server) fetches initial DB state -> `property-grid.tsx` (Client) handles "Sync" and "Initialize" actions via `useTransition`.
+-   **UI Architecture:** Hydration mismatch avoidance: `page.tsx` (Server) fetches initial DB state. `property-grid.tsx` uses **TanStack Query** (`useMutation`) for client-side interactions to ensure robust state management and strict adherence to architectural constraints.
+-   **Loading States:** Implemented `loading.tsx` with skeleton screens for Suspense support during navigation/data fetching.
+
+## Session 2.1: Search Analytics Pipeline
+
+### Status
+-   [x] Implemented `fetchSearchAnalytics` in `src/lib/gsc/client.ts` with 25k row pagination safety.
+-   [x] Created `analyticsService.bulkUpsertAnalytics` with composite key conflict resolution (`unq_sa_upsert`).
+-   [x] Configured `Inngest` for time-series background jobs (`daily-sync`, `manual-sync`).
+    -   *Logic:* Lag defaults to 3 days. Dimensions: `date`, `query`, `page`, `country`, `device`.
+-   [x] Added `DataSyncHistory` Server Component for density feedback on the Dashboard.
+
+### Technical Decisions
+-   **Schema Constraint:** Added explicit unique constraint on `(property_id, date, query, page, device, country)` to enable robust Upsert operations.
+-   **Dimensions:** Found that `date` must be explicitly requested in GSC API `dimensions` array to be returned in time-series format; updated `client.ts` / logic accordingly.
+-   **Inngest:** Used for orchestration of long-running syncs to avoid Vercel Function timeouts.
+
+## Session 2.2: URL Intelligence Engine
+
+### Status
+-   [x] Implemented SPS Algorithm in `src/lib/algorithms/seo-priority.ts`.
+-   [x] Built `urlService` with bulk upsert logic and aggregation.
+-   [x] Integrated scoring into `daily-sync` Inngest function.
+-   [x] Created `/urls` page with Virtualized Table (`@tanstack/react-virtual`).
+
+### Technical Decisions
+-   **SPS Formula:** `0.35(Traffic) + 0.25(Conversion) + 0.20(Crawl) + 0.15(Links) + 0.05(Freshness)`.
+-   **Normalization:** Used Log10 for Traffic/Links to compress power-law distributions.
+-   **Performance:** Used Virtual Scrolling to handle potentially 10k+ rows in the browser without DOM overload.
+
+## Session 2.3: Ranking History & Velocity Views
+
+### Status
+-   [x] Implemented `calculateVelocity` (7d/30d) and Classification (`RAPID_DECLINE`, `MOMENTUM_BUILD`).
+-   [x] Created Materialized View `ranking_velocity` via migration script.
+-   [x] Updated `daily-sync` to `REFRESH MATERIALIZED VIEW CONCURRENTLY` after ingestion.
+-   [x] Added `VelocityHeatmap` to Dashboard for 30-day momentum visualization.
+
+### Technical Decisions
+-   **Materialized View:** Chosen over real-time aggregation for dashboard performance. Refresh is concurrent to avoid locking read operations.
+-   **Velocity Formula:** `(Current - Prev) / Days`. Negative result = Improvement (Green).
+-   **Inverted Logic:** UI explicitly handles "Lower Position is Better" checks (e.g. `pos_30 - current > 0` is an improvement).
+-   **Thresholds:** `>0.5` drops/day = RAPID DECLINE. `<-0.3` gains/day = MOMENTUM.
+
+## Session 3.1: Agent Orchestrator Implementation
+
+### Status
+-   [x] Implemented `orchestrator.classifyAndRoute` using Gemini 1.5 Flash.
+-   [x] Built `agentEngine` supporting `SINGLE`, `SEQUENTIAL`, and `PARALLEL` execution modes.
+-   [x] Created Streaming Chat API (`/api/agent/chat`) integrating context and agent results.
+
+### Technical Decisions
+-   **Runtime:** Switched API to `nodejs` (instead of `edge`) to support the `postgres` DB driver while maintaining access to Vercel AI SDK.
+-   **Routing Schema:** Defined `RoutingSchema` with Zod to strictly output JSON plans (Primary/Secondary agents).
+-   **Context Injection:** Orchestrator receives real-time `totalClicks` context to inform routing (e.g., distinguishing high-traffic analysis from general setup).
+
+## Session 3.2: The Analyst Agent Integration
+
+### Status
+-   [x] Implemented `analyst-tools.ts` (`get_search_analytics`, `get_ranking_velocity`).
+-   [x] Deployed `analystAgent` kernel using Gemini 1.5 Pro and `generateText` with tooling (max 5 steps).
+-   [x] Wired Analyst into `agentEngine`.
+
+### Technical Decisions
+-   **Model:** Gemini 1.5 Pro for massive context analysis (up to 5k rows of analytics if needed).
+-   **Anomaly Logic:**
+    -   `CTR Drop + Stable Pos` = Meta Issue.
+    -   `Pos Drop` = Relevance Issue.
+    -   `High Crawl + 0 Clicks` = Waste.
+-   **Context:** `propertyId` explicitly passed in context object to allow tools to bind correctly.
+
+## Session 3.2: The Analyst Agent Integration
+
+### Status
+-   [x] Implemented `analyst-tools.ts` (`get_search_analytics`, `get_ranking_velocity`).
+-   [x] Deployed `analystAgent` kernel using Gemini 1.5 Pro and `generateText` with tooling (max 5 steps).
+-   [x] Wired Analyst into `agentEngine`.
+
+### Technical Decisions
+-   **Model:** Gemini 1.5 Pro for massive context analysis (up to 5k rows of analytics if needed).
+-   **Anomaly Logic:**
+    -   `CTR Drop + Stable Pos` = Meta Issue.
+    -   `Pos Drop` = Relevance Issue.
+    -   `High Crawl + 0 Clicks` = Waste.
+-   **Context:** `propertyId` explicitly passed in context object to allow tools to bind correctly.
