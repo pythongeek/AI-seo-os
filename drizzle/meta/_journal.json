@@ -15,6 +15,13 @@
       "when": 1769893281890,
       "tag": "0001_chubby_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769902772944,
+      "tag": "0002_icy_gorgon",
+      "breakpoints": true
     }
   ]
 }

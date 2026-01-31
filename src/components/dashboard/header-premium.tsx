@@ -9,6 +9,13 @@ import {
     Settings2
 } from 'lucide-react';
 import { useState } from 'react';
+import { OrgSwitcher } from './org-switcher';
+
+// Mock data for UI demonstration
+const MOCK_ORGS = [
+    { id: 'org-1', name: 'Global SEO Agency', slug: 'global-seo', role: 'OWNER' },
+    { id: 'org-2', name: 'Alpha Tech Corp', slug: 'alpha-tech', role: 'ADMIN' },
+];
 
 export function DashboardHeader({ user }: { user: any }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,10 +42,19 @@ export function DashboardHeader({ user }: { user: any }) {
                 </div>
             </div>
 
+            {/* Center: Org Switcher */}
+            <div className="flex-1 flex justify-center">
+                <OrgSwitcher
+                    organizations={MOCK_ORGS}
+                    activeOrgId="org-1"
+                    onSwitch={(id) => console.log('Switch to', id)}
+                />
+            </div>
+
             {/* Right Actions */}
             <div className="flex items-center gap-3">
-                {/* Active Property Selector (Placeholder for actual property logic) */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer mr-4">
+                {/* Active Property Selector */}
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer mr-2">
                     <Globe className="w-3.5 h-3.5 text-blue-500" />
                     <span className="text-xs font-semibold text-slate-700">seo-os.com</span>
                     <Settings2 className="w-3.5 h-3.5 text-slate-400" />

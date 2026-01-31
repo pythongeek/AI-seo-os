@@ -14,6 +14,32 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// ==========================================
+// MULTI-TENANCY TABLES
+// ==========================================
+
+export const organizations = pgTable('organizations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  planTier: text('plan_tier', { enum: ['FREE', 'PRO', 'ENTERPRISE'] }).default('FREE'),
+  usageQuotas: jsonb('usage_quotas').default({ properties: 3, aiQueries: 100 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const memberships = pgTable('memberships', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  role: text('role', { enum: ['OWNER', 'ADMIN', 'MEMBER'] }).default('MEMBER').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => ({
+  unq: unique().on(t.userId, t.orgId),
+  orgIdx: index('idx_memberships_org').on(t.orgId),
+  userIdx: index('idx_memberships_user').on(t.userId),
+}));
+
 export const accounts = pgTable('accounts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -33,7 +59,7 @@ export const accounts = pgTable('accounts', {
 
 export const gscProperties = pgTable('gsc_properties', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
   propertyUrl: text('property_url').notNull(),
   verificationMethod: text('verification_method'),
   permissionLevel: text('permission_level').default('siteOwner'),
@@ -41,8 +67,8 @@ export const gscProperties = pgTable('gsc_properties', {
   syncStatus: text('sync_status').default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({
-  unq: unique().on(t.userId, t.propertyUrl),
-  userIdIdx: index('idx_properties_user').on(t.userId),
+  unq: unique().on(t.orgId, t.propertyUrl),
+  orgIdIdx: index('idx_properties_org').on(t.orgId),
 }));
 
 export const sessions = pgTable('session', {
@@ -64,7 +90,8 @@ export const verificationTokens = pgTable('verificationToken', {
 // ==========================================
 
 export const searchAnalytics = pgTable('search_analytics', {
-  id: bigint('id', { mode: 'number' }).generatedAlwaysAsIdentity(), // Using generatedAlwaysAsIdentity for BIGSERIAL
+  id: bigint('id', { mode: 'number' }).generatedAlwaysAsIdentity(),
+  orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }),
   propertyId: uuid('property_id').references(() => gscProperties.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   query: text('query').notNull(),
@@ -77,9 +104,9 @@ export const searchAnalytics = pgTable('search_analytics', {
   position: numeric('position', { precision: 5, scale: 2 }).default('0'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (t) => ({
-  pk: primaryKey({ columns: [t.id, t.date] }), // Composite PK for partitioning
+  pk: primaryKey({ columns: [t.id, t.date] }),
+  orgIdx: index('idx_sa_org').on(t.orgId),
   propertyDateIdx: index('idx_sa_property_date').on(t.propertyId, t.date),
-  // Constraint for upsert: property_id + date + query + page + device + country = UNIQUE
   upsertConstraint: unique('unq_sa_upsert').on(t.propertyId, t.date, t.query, t.page, t.device, t.country),
 }));
 
