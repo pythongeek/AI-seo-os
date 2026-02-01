@@ -1,7 +1,7 @@
 import { inngest } from "@/inngest/client";
 import { db } from "@/lib/db";
 import { gscProperties, backgroundJobs } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { gscService } from "@/lib/gsc/client";
 import { analyticsService } from "@/lib/db/services/analytics-service";
 import { subDays, format } from "date-fns";
@@ -78,6 +78,12 @@ export const manualSync = inngest.createFunction(
                     .where(eq(backgroundJobs.id, jobId));
                 throw error;
             }
+        });
+
+        // 3. Refresh Ranking Velocity View
+        await step.run("refresh-velocity-view", async () => {
+            await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY ranking_velocity`);
+            return { success: true };
         });
 
         return { success: true };

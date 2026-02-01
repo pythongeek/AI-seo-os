@@ -11,14 +11,9 @@ import {
 import { useState } from 'react';
 import { OrgSwitcher } from './org-switcher';
 
-// Mock data for UI demonstration
-const MOCK_ORGS = [
-    { id: 'org-1', name: 'Global SEO Agency', slug: 'global-seo', role: 'OWNER' },
-    { id: 'org-2', name: 'Alpha Tech Corp', slug: 'alpha-tech', role: 'ADMIN' },
-];
-
-export function DashboardHeader({ user }: { user: any }) {
+export function DashboardHeader({ user, organizations }: { user: any; organizations: any[] }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const activeOrg = organizations[0]; // Simple logic for MVP
 
     return (
         <header className="h-16 border-b border-slate-800 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-40">
@@ -44,8 +39,8 @@ export function DashboardHeader({ user }: { user: any }) {
             {/* Center: Context Selection */}
             <div className="flex items-center gap-2">
                 <OrgSwitcher
-                    organizations={MOCK_ORGS}
-                    activeOrgId="org-1"
+                    organizations={organizations}
+                    activeOrgId={activeOrg?.id}
                     onSwitch={(id) => console.log('Switch to', id)}
                 />
                 <div className="h-4 w-[1px] bg-slate-800 mx-1" />

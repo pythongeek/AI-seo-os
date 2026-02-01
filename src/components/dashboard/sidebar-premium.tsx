@@ -24,7 +24,7 @@ const navItems = [
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-export function DashboardSidebar({ user }: { user: any }) {
+export function DashboardSidebar({ user, organizations }: { user: any; organizations: any[] }) {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [swarmHealth, setSwarmHealth] = useState<'healthy' | 'unhealthy' | 'loading'>('loading');

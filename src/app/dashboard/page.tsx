@@ -8,6 +8,7 @@ import { VelocityHeatmap } from "@/components/dashboard/velocity-heatmap";
 import { KPICards } from "@/components/dashboard/kpi-cards";
 import { Activity, ShieldCheck, Database, Zap } from "lucide-react";
 import { getDashboardKPIs } from "@/lib/gsc/analytics";
+import { SyncPulse } from "@/components/dashboard/sync-pulse";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,37 +84,7 @@ export default async function DashboardPage() {
                 {/* Sidebar Monitoring: 4 cols */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
                     <DataSyncHistory propertyId={property.id} />
-
-                    {/* Advanced Controls Panel */}
-                    <div className="bg-zinc-950 border border-slate-800 rounded p-5 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Zap className="w-16 h-16 text-blue-500" />
-                        </div>
-
-                        <h3 className="text-[10px] font-bold font-mono text-slate-500 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                            KERNEL_CONTROLS
-                        </h3>
-
-                        <div className="space-y-3">
-                            <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-[10px] uppercase tracking-widest transition-all shadow-[0_4px_1px_rgba(37,99,235,0.2)] active:translate-y-0.5 active:shadow-none">
-                                EXEC_FULL_RESCAN
-                            </button>
-                            <button className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-mono font-bold text-[10px] uppercase tracking-widest transition-all">
-                                REBUILD_INST_MEMORY
-                            </button>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-slate-800">
-                            <div className="flex items-center justify-between text-[9px] font-mono text-slate-600 uppercase mb-2">
-                                <span>SWARM_LOAD</span>
-                                <span>NORMAL [24%]</span>
-                            </div>
-                            <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
-                                <div className="h-full w-1/4 bg-blue-500" />
-                            </div>
-                        </div>
-                    </div>
+                    <SyncPulse propertyId={property.id} />
 
                     <div className="bg-slate-900/50 border border-slate-800/50 rounded p-4 text-center">
                         <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
