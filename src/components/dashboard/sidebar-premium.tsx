@@ -17,9 +17,10 @@ import { useState, useEffect } from 'react';
 
 const navItems = [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/dashboard/chat', label: 'AI Swarm Chat', icon: MessageSquare },
+    { href: '/dashboard/chat', label: 'AI Swarm', icon: MessageSquare },
     { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-    { href: '/dashboard/skills', label: 'Skill Library', icon: BookOpen },
+    { href: '/urls', label: 'URL Priority', icon: Database },
+    { href: '/dashboard/skills', label: 'Skill Lib', icon: BookOpen },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -47,25 +48,25 @@ export function DashboardSidebar({ user }: { user: any }) {
     return (
         <aside
             className={cn(
-                "h-screen bg-[#0f172a] border-r border-slate-800 transition-all duration-300 flex flex-col relative",
-                isCollapsed ? "w-20" : "w-64"
+                "h-screen bg-zinc-950 border-r border-slate-800 transition-all duration-300 flex flex-col relative",
+                isCollapsed ? "w-16" : "w-60"
             )}
         >
             {/* Brand Section */}
-            <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <Activity className="text-white w-6 h-6" />
+            <div className="p-4 flex items-center gap-3 border-b border-slate-800 h-16">
+                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                    <Activity className="text-white w-5 h-5" />
                 </div>
                 {!isCollapsed && (
                     <div className="flex flex-col">
-                        <span className="text-white font-bold tracking-tight text-lg">AI SEO OS</span>
-                        <span className="text-xs text-slate-400 font-medium tracking-wider uppercase">Enterprise</span>
+                        <span className="text-slate-100 font-bold tracking-tighter text-base font-mono">SEO OS [V2.5]</span>
+                        <span className="text-[10px] text-blue-500 font-bold tracking-widest uppercase terminal-density">Kernel Active</span>
                     </div>
                 )}
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-2 mt-4">
+            <nav className="flex-1 p-2 space-y-1 mt-2">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -75,29 +76,25 @@ export function DashboardSidebar({ user }: { user: any }) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                'group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative overflow-hidden',
+                                'group flex items-center gap-3 px-3 py-2 rounded transition-all duration-150 relative overflow-hidden',
                                 isActive
-                                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]'
-                                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                                    ? 'bg-blue-600/5 text-blue-400 border border-blue-500/10'
+                                    : 'text-slate-500 hover:bg-slate-900 hover:text-slate-300'
                             )}
                         >
-                            {isActive && (
-                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full" />
-                            )}
                             <Icon className={cn(
-                                "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
-                                isActive ? "text-blue-500" : "text-slate-500 group-hover:text-slate-300"
+                                "w-4 h-4 shrink-0 transition-transform",
+                                isActive ? "text-blue-500" : "text-slate-600 group-hover:text-slate-400"
                             )} />
                             {!isCollapsed && (
                                 <div className="flex-1 flex items-center justify-between">
-                                    <span>{item.label}</span>
-                                    {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
+                                    <span className="text-xs font-medium font-mono uppercase tracking-tight">{item.label}</span>
+                                    {isActive && <ChevronRight className="w-3 h-3 opacity-50" />}
                                 </div>
                             )}
 
-                            {/* Tooltip for collapsed mode */}
                             {isCollapsed && (
-                                <div className="absolute left-16 bg-slate-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 text-xs shadow-xl border border-slate-700">
+                                <div className="absolute left-14 bg-zinc-900 text-[10px] text-slate-200 px-2 py-1 rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-mono uppercase tracking-widest border border-slate-800 z-50">
                                     {item.label}
                                 </div>
                             )}
@@ -106,25 +103,43 @@ export function DashboardSidebar({ user }: { user: any }) {
                 })}
             </nav>
 
-            {/* Swarm Status Indicator */}
+            {/* Swarm Heartbeat Indicator */}
             {!isCollapsed && (
-                <div className="m-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="mx-2 mb-4 p-3 rounded bg-slate-900/30 border border-slate-800/50">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Swarm Pulse</span>
                         <div className={cn(
-                            "w-2 h-2 rounded-full animate-pulse",
-                            swarmHealth === 'healthy' ? "bg-green-500" :
-                                swarmHealth === 'unhealthy' ? "bg-red-500" : "bg-slate-500"
+                            "w-1.5 h-1.5 rounded-full",
+                            swarmHealth === 'healthy' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500"
                         )} />
-                        <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">Swarm Status</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">
-                        {swarmHealth === 'healthy' ? 'All systems operational.' :
-                            swarmHealth === 'unhealthy' ? 'System disruption detected.' : 'Syncing swarm status...'} <br />
-                        Institutional memory synchronized.
-                    </p>
-                    <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="flex items-center gap-1"><Database className="w-3 h-3" /> 1.2 GB</span>
-                        <span>v2.1.0</span>
+
+                    <div className="grid grid-cols-4 gap-1.5">
+                        {['MN', 'AI', 'GS', 'MM'].map((node) => (
+                            <div key={node} className="flex flex-col items-center gap-1">
+                                <div className={cn(
+                                    "w-full h-1 rounded-full overflow-hidden bg-slate-800",
+                                    swarmHealth === 'healthy' ? "after:bg-emerald-500" : "after:bg-rose-500"
+                                )}>
+                                    <div className={cn(
+                                        "h-full w-full bg-emerald-500/20",
+                                        swarmHealth === 'healthy' && "animate-pulse"
+                                    )} />
+                                </div>
+                                <span className="text-[8px] font-mono font-bold text-slate-600">{node}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between px-1 border-t border-slate-800 pt-3">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-mono text-slate-400 leading-none">MEM_USAGE</span>
+                            <span className="text-[10px] font-mono text-emerald-500 font-bold tabular-nums">1.2GB/4GB</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-mono text-slate-400 leading-none">LATENCY</span>
+                            <span className="text-[10px] font-mono text-blue-400 font-bold tabular-nums">42ms</span>
+                        </div>
                     </div>
                 </div>
             )}

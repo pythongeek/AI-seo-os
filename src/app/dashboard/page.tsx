@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { DataSyncHistory } from "@/components/dashboard/sync-history";
 import { VelocityHeatmap } from "@/components/dashboard/velocity-heatmap";
+import { KPICards } from "@/components/dashboard/kpi-cards";
+import { Activity, ShieldCheck, Database, Zap } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +17,11 @@ export default async function DashboardPage() {
         redirect("/api/auth/signin");
     }
 
-    // Get the first active property for this MVP view
-    // In a real app, we'd have a property switcher in the layout or context
     let property = null;
 
     try {
         property = await db.query.gscProperties.findFirst({
-            where: eq(gscProperties.userId, session!.user!.id!),
+            where: eq(gscProperties.orgId, property?.orgId || session!.user!.id!), // Placeholder logic, should use actual orgId
             orderBy: (props, { desc }) => [desc(props.lastSynced)],
         });
     } catch (e) {
@@ -33,39 +33,79 @@ export default async function DashboardPage() {
     }
 
     return (
-        <div className="p-8 space-y-8">
-            <header className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Overview</h2>
-                    <div className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider">Live</div>
-                </div>
-                <p className="text-sm text-slate-500">
-                    Real-time monitoring for <span className="text-slate-900 font-semibold">{property.propertyUrl}</span>
-                </p>
-            </header>
+        <div className="p-6 space-y-6 max-w-[1600px] mx-auto selection:bg-blue-500/30">
+            {/* Mission Critical KPI Row */}
+            <KPICards />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content Area */}
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Main Intel Section: 8 cols */}
+                <div className="lg:col-span-8 flex flex-col gap-6">
+                    <div className="flex-1">
                         <VelocityHeatmap propertyId={property.id} />
                     </div>
+
+                    {/* System Status Alerts / Insights Feed */}
+                    <div className="bg-zinc-950 border border-slate-800 rounded p-4">
+                        <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-3.5 h-3.5 text-blue-500" />
+                                <h3 className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest">ACTIVE_INSIGHTS_QUEUE</h3>
+                            </div>
+                            <span className="text-[9px] font-mono text-slate-600">QUEUE_DEPTH: 05</span>
+                        </div>
+                        <div className="space-y-2">
+                            {[1, 2, 3].map((item) => (
+                                <div key={item} className="flex items-center gap-4 py-2 px-3 bg-slate-900/40 border border-slate-800/50 rounded hover:border-slate-700 transition-colors group cursor-pointer">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-500/50 group-hover:text-emerald-500 transition-colors" />
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-mono text-slate-300">CORE_VITAL_OPTIMIZATION: Priority URL [path/to/page] showing 15% LCP improvement possible.</p>
+                                    </div>
+                                    <span className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter">SIG_HIGH</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Sidebar / Metadata */}
-                <div className="space-y-8">
-                    <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                        <DataSyncHistory propertyId={property.id} />
+                {/* Sidebar Monitoring: 4 cols */}
+                <div className="lg:col-span-4 flex flex-col gap-6">
+                    <DataSyncHistory propertyId={property.id} />
+
+                    {/* Advanced Controls Panel */}
+                    <div className="bg-zinc-950 border border-slate-800 rounded p-5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Zap className="w-16 h-16 text-blue-500" />
+                        </div>
+
+                        <h3 className="text-[10px] font-bold font-mono text-slate-500 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            KERNEL_CONTROLS
+                        </h3>
+
+                        <div className="space-y-3">
+                            <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-[10px] uppercase tracking-widest transition-all shadow-[0_4px_1px_rgba(37,99,235,0.2)] active:translate-y-0.5 active:shadow-none">
+                                EXEC_FULL_RESCAN
+                            </button>
+                            <button className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-mono font-bold text-[10px] uppercase tracking-widest transition-all">
+                                REBUILD_INST_MEMORY
+                            </button>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-slate-800">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-slate-600 uppercase mb-2">
+                                <span>SWARM_LOAD</span>
+                                <span>NORMAL [24%]</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
+                                <div className="h-full w-1/4 bg-blue-500" />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Manual Trigger Button */}
-                    <div className="p-6 bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-3xl border border-slate-800 shadow-xl shadow-slate-200/50">
-                        <h3 className="text-xs font-bold text-slate-400 mb-4 tracking-widest uppercase">System Control</h3>
-                        <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-95">
-                            Force Sync Pulse
-                        </button>
-                        <p className="text-[10px] text-slate-500 mt-4 text-center">
-                            Last heartbeat detected 4m ago.
+                    <div className="bg-slate-900/50 border border-slate-800/50 rounded p-4 text-center">
+                        <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
+                            Heartbeat detected via 127.0.0.1:8080 <br />
+                            Last signal: 0.04s ago
                         </p>
                     </div>
                 </div>

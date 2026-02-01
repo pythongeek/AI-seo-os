@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Postgres (Supabase-compatible) with pgvector
   db:
@@ -18,7 +16,7 @@ services:
       - app-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,7 +33,7 @@ services:
       - app-network
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5

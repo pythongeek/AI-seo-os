@@ -1,27 +1,73 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@theme {
+  --font-sans: "Inter", "Geist Sans", sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", "Roboto Mono", monospace;
+
+  /* Bloomberg Terminal Color Palette */
+  --color-zinc-950: #09090b;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+
+  --color-emerald-500: #10b981;
+  --color-rose-500: #f43f5e;
+  --color-cyan-500: #06b6d4;
+  --color-amber-500: #f59e0b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+:root {
+  --background: var(--color-zinc-950);
+  --foreground: var(--color-slate-200);
+
+  --card: var(--color-slate-900);
+  --card-foreground: var(--color-slate-200);
+
+  --popover: var(--color-slate-950);
+  --popover-foreground: var(--color-slate-200);
+
+  --primary: var(--color-blue-600);
+  --primary-foreground: var(--color-slate-50);
+
+  --secondary: var(--color-slate-800);
+  --secondary-foreground: var(--color-slate-200);
+
+  --muted: var(--color-slate-800);
+  --muted-foreground: var(--color-slate-400);
+
+  --accent: var(--color-slate-800);
+  --accent-foreground: var(--color-slate-200);
+
+  --destructive: var(--color-rose-500);
+  --destructive-foreground: var(--color-slate-50);
+
+  --border: var(--color-slate-800);
+  --input: var(--color-slate-800);
+  --ring: var(--color-blue-600);
+
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Monospace data utility */
+.tabular-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bloomberg Density Utilities */
+.terminal-density {
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }

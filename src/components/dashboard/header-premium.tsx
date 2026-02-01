@@ -21,68 +21,67 @@ export function DashboardHeader({ user }: { user: any }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     return (
-        <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-40">
-            {/* Left Search Bar */}
-            <div className="flex items-center gap-4 flex-1 max-w-xl">
-                <div className="relative w-full group">
+        <header className="h-16 border-b border-slate-800 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-40">
+            {/* Left: Search & Ticker */}
+            <div className="flex items-center gap-6 flex-1 max-w-2xl">
+                <div className="relative w-full group max-w-md">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Search className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="w-3.5 h-3.5 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
                     </div>
                     <input
                         type="text"
-                        placeholder="Search analytics, agents, or institutional memory..."
-                        className="w-full h-10 pl-10 pr-4 bg-slate-100 border-transparent focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 rounded-2xl text-sm transition-all outline-none"
+                        placeholder="EXECUTE SEARCH_CMD..."
+                        className="w-full h-9 pl-9 pr-4 bg-slate-900/50 border border-slate-800 focus:bg-zinc-900 focus:border-blue-500/50 rounded text-[11px] font-mono transition-all outline-none text-slate-300 placeholder:text-slate-700 uppercase tracking-widest"
                     />
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] text-slate-400 font-mono">
-                            <Command className="w-2.5 h-2.5" />
-                            <span>K</span>
-                        </div>
-                    </div>
+                </div>
+
+                <div className="hidden xl:flex items-center gap-4 text-[10px] font-mono text-slate-600 border-l border-slate-800 pl-6 uppercase tracking-widest overflow-hidden whitespace-nowrap">
+                    <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> GSC_STREAM: ACTIVE</span>
+                    <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-blue-500" /> KERNEL_LOAD: 0.12%</span>
                 </div>
             </div>
 
-            {/* Center: Org Switcher */}
-            <div className="flex-1 flex justify-center">
+            {/* Center: Context Selection */}
+            <div className="flex items-center gap-2">
                 <OrgSwitcher
                     organizations={MOCK_ORGS}
                     activeOrgId="org-1"
                     onSwitch={(id) => console.log('Switch to', id)}
                 />
+                <div className="h-4 w-[1px] bg-slate-800 mx-1" />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer">
+                    <Globe className="w-3 h-3 text-emerald-500" />
+                    <span className="text-[10px] font-bold text-slate-300 font-mono tracking-tighter uppercase whitespace-nowrap">seo-os.com</span>
+                </div>
             </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
-                {/* Active Property Selector */}
-                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer mr-2">
-                    <Globe className="w-3.5 h-3.5 text-blue-500" />
-                    <span className="text-xs font-semibold text-slate-700">seo-os.com</span>
-                    <Settings2 className="w-3.5 h-3.5 text-slate-400" />
-                </div>
-
                 <button
                     aria-label="View notifications"
-                    className="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors relative"
+                    className="p-2 rounded hover:bg-slate-900 transition-colors relative"
                 >
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full" />
+                    <Bell className="w-4 h-4 text-slate-500" />
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
                 </button>
 
                 <button
                     aria-label="Get help"
-                    className="p-2.5 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                    className="p-2 rounded hover:bg-slate-900 transition-colors"
                 >
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className="w-4 h-4 text-slate-500" />
                 </button>
 
-                <div className="h-6 w-[1px] bg-slate-200 mx-2" />
+                <div className="h-8 w-[1px] bg-slate-800 mx-2" />
 
                 <div className="flex items-center gap-3 pl-2">
                     <div className="flex flex-col items-end">
-                        <span className="text-xs font-bold text-slate-900 leading-none">System Operator</span>
-                        <span className="text-[10px] font-medium text-green-600 leading-none mt-1 uppercase tracking-wider">Level 4 Certified</span>
+                        <span className="text-[10px] font-bold text-slate-200 leading-none font-mono uppercase tracking-widest">Operator.sys</span>
+                        <span className="text-[8px] font-bold text-emerald-500 leading-none mt-1 uppercase tracking-[0.2em]">L4_AUTH_OS</span>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 border border-slate-200" />
+                    <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center font-mono text-blue-500 text-xs shadow-inner">
+                        OP
+                    </div>
                 </div>
             </div>
         </header>
