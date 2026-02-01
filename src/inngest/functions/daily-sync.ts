@@ -1,7 +1,7 @@
 import { inngest } from "@/inngest/client";
 import { db } from "@/lib/db";
-import { gscProperties, backgroundJobs } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { gscProperties, backgroundJobs, memberships, accounts } from "@/db/schema";
+import { eq, sql, and } from "drizzle-orm";
 import { gscService } from "@/lib/gsc/client";
 import { analyticsService } from "@/lib/db/services/analytics-service";
 import { urlService } from "@/lib/db/services/url-service";
@@ -28,6 +28,24 @@ export const dailySync = inngest.createFunction(
         // 2. Iterate and sync each property
         for (const prop of properties) {
             const result = await step.run(`sync-property-${prop.id}`, async () => {
+                // Find a user with Google Account in this Org
+                // This is a bit expensive but necessary for multi-tenant background jobs
+                const connectedMember = await db
+                    .select({ userId: memberships.userId })
+                    .from(memberships)
+                    .innerJoin(accounts, eq(memberships.userId, accounts.userId))
+                    .where(and(
+                        eq(memberships.orgId, prop.orgId),
+                        eq(accounts.provider, 'google')
+                    ))
+                    .limit(1);
+
+                const validUserId = connectedMember[0]?.userId;
+
+                if (!validUserId) {
+                    throw new Error(`No connected Google user found for Org ${prop.orgId}`);
+                }
+
                 const jobId = crypto.randomUUID();
                 const today = new Date();
                 const endDate = format(subDays(today, 3), 'yyyy-MM-dd'); // 3 days lag
@@ -46,7 +64,7 @@ export const dailySync = inngest.createFunction(
                     console.log(`Syncing ${prop.propertyUrl} for ${startDate} to ${endDate}`);
                     const dimensions: any[] = ['date', 'query', 'page', 'country', 'device'];
                     const rows = await gscService.fetchSearchAnalytics(
-                        prop.userId,
+                        validUserId,
                         prop.id,
                         prop.propertyUrl,
                         startDate,

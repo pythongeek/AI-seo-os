@@ -14,10 +14,7 @@ export const manualSync = inngest.createFunction(
 
         const property = await step.run("fetch-property", async () => {
             return await db.query.gscProperties.findFirst({
-                where: and(
-                    eq(gscProperties.id, propertyId),
-                    eq(gscProperties.userId, userId)
-                )
+                where: eq(gscProperties.id, propertyId)
             });
         });
 
@@ -45,7 +42,7 @@ export const manualSync = inngest.createFunction(
             try {
                 const dimensions: any[] = ['date', 'query', 'page', 'country', 'device'];
                 const rows = await gscService.fetchSearchAnalytics(
-                    property.userId,
+                    userId, // Use the user who triggered the sync
                     property.id,
                     property.propertyUrl,
                     startDate,

@@ -1,12 +1,13 @@
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { gscProperties } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { gscProperties, memberships } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { DataSyncHistory } from "@/components/dashboard/sync-history";
 import { VelocityHeatmap } from "@/components/dashboard/velocity-heatmap";
 import { KPICards } from "@/components/dashboard/kpi-cards";
 import { Activity, ShieldCheck, Database, Zap } from "lucide-react";
+import { getDashboardKPIs } from "@/lib/gsc/analytics";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,10 +21,20 @@ export default async function DashboardPage() {
     let property = null;
 
     try {
-        property = await db.query.gscProperties.findFirst({
-            where: eq(gscProperties.orgId, property?.orgId || session!.user!.id!), // Placeholder logic, should use actual orgId
-            orderBy: (props, { desc }) => [desc(props.lastSynced)],
+        // 1. Get User's Orgs
+        const userOrgs = await db.query.memberships.findMany({
+            where: eq(memberships.userId, session.user.id),
+            columns: { orgId: true }
         });
+
+        const orgIds = userOrgs.map(m => m.orgId);
+
+        if (orgIds.length > 0) {
+            property = await db.query.gscProperties.findFirst({
+                where: inArray(gscProperties.orgId, orgIds),
+                orderBy: (props, { desc }) => [desc(props.lastSynced)],
+            });
+        }
     } catch (e) {
         console.error("DB Query failed in debug mode or otherwise", e);
     }
@@ -32,10 +43,12 @@ export default async function DashboardPage() {
         redirect("/onboarding");
     }
 
+    const kpiData = await getDashboardKPIs(property.id);
+
     return (
         <div className="p-6 space-y-6 max-w-[1600px] mx-auto selection:bg-blue-500/30">
             {/* Mission Critical KPI Row */}
-            <KPICards />
+            <KPICards data={kpiData} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Main Intel Section: 8 cols */}
